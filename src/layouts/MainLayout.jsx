@@ -35,16 +35,6 @@ const drawerWidth = 260;
 
 const menuItems = [
   {
-    label: "Dashboard",
-    path: "/",
-    icon: <DashboardRoundedIcon />,
-  },
-  {
-    label: "Usuarios",
-    path: "/usuarios",
-    icon: <PeopleAltRoundedIcon />,
-  },
-  {
     label: "Productos",
     path: "/productos",
     icon: <AssessmentRoundedIcon />,
@@ -302,11 +292,8 @@ export default function MainLayout() {
           )}
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography fontWeight={700} fontSize={17}>
-              {currentPage}
-            </Typography>
             <Typography fontSize={11} color="text.secondary">
-              Inicio / {currentPage}
+              {currentPage}
             </Typography>
           </Box>
 
