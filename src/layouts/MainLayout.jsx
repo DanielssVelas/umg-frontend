@@ -20,8 +20,6 @@ import {
   useTheme,
 } from "@mui/material";
 
-import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
-import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import AssessmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
@@ -37,6 +35,11 @@ const menuItems = [
   {
     label: "Productos",
     path: "/productos",
+    icon: <AssessmentRoundedIcon />,
+  },
+  {
+    label: "Ventas",
+    path: "/venta",
     icon: <AssessmentRoundedIcon />,
   },
 ];
