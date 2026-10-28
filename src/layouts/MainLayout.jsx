@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -28,6 +27,7 @@ import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
 
 const drawerWidth = 260;
 
@@ -41,6 +41,11 @@ const menuItems = [
     label: "Ventas",
     path: "/venta",
     icon: <AssessmentRoundedIcon />,
+  },
+  {
+    label: "Proveedores",
+    path: "/proveedores",
+    icon: <LocalShippingRoundedIcon />,
   },
 ];
 
@@ -128,10 +133,8 @@ export default function MainLayout() {
         <List disablePadding>
           {menuItems.map((item) => {
             const selected =
-              item.path === "/"
-                ? location.pathname === "/"
-                : location.pathname === item.path ||
-                  location.pathname.startsWith(`${item.path}/`);
+              location.pathname === item.path ||
+              location.pathname.startsWith(`${item.path}/`);
 
             return (
               <ListItemButton
@@ -195,10 +198,9 @@ export default function MainLayout() {
             minHeight: 48,
             px: 1.5,
             borderRadius: 2,
-            color:
-              location.pathname.startsWith("/configuracion")
-                ? "#FFFFFF"
-                : "#9CA3AF",
+            color: location.pathname.startsWith("/configuracion")
+              ? "#FFFFFF"
+              : "#9CA3AF",
             "& .MuiListItemIcon-root": {
               minWidth: 38,
               color: "inherit",
