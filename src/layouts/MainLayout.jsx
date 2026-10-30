@@ -29,6 +29,7 @@ import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 
 const drawerWidth = 260;
 
@@ -45,7 +46,7 @@ const menuItems = [
   },
   {
     label: "Compras",
-    path: "/compras",
+    path: "/historial-compras",
     icon: <ShoppingCartRoundedIcon />,
   },
   {
