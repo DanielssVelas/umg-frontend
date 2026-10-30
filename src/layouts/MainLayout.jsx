@@ -28,6 +28,7 @@ import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 
 const drawerWidth = 260;
 
@@ -41,6 +42,11 @@ const menuItems = [
     label: "Ventas",
     path: "/venta",
     icon: <AssessmentRoundedIcon />,
+  },
+  {
+    label: "Compras",
+    path: "/compras",
+    icon: <ShoppingCartRoundedIcon />,
   },
   {
     label: "Caja",
@@ -379,7 +385,9 @@ export default function MainLayout() {
         sx={{
           flexGrow: 1,
           minWidth: 0,
-          minHeight: "100vh",
+          height: "100vh",
+          boxSizing: "border-box",
+          overflowY: "auto",
           px: { xs: 2, md: 4 },
           pb: 4,
           pt: "100px",
