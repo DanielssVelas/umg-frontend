@@ -5,13 +5,11 @@ import {
     useEffect,
     useState,
 } from "react";
-
-// import { loginRequest } from "../services/authService";
+import { loginRequest } from "../services/authService";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-
     const [usuario, setUsuario] = useState(null);
     const [token, setToken] = useState(null);
     const [loadingAuth, setLoadingAuth] = useState(true);
@@ -30,7 +28,6 @@ export const AuthProvider = ({ children }) => {
                 setUsuario(JSON.parse(usuarioGuardado));
             } catch (error) {
                 console.error("Error recuperando sesión:", error);
-
                 localStorage.removeItem("nexus_token");
                 localStorage.removeItem("nexus_usuario");
             }
@@ -44,39 +41,64 @@ export const AuthProvider = ({ children }) => {
     // ==========================================
 
     const login = async (credenciales) => {
+        try {
+            const response = await loginRequest(credenciales);
+            console.log('response', response);
+            
+            // Validar respuesta del backend
+            if (
+                !response?.result ||
+                !response?.data?.flag ||
+                !response?.data?.token
+            ) {
+                throw new Error(
+                    response?.data?.mensaje ||
+                    response?.description ||
+                    "No fue posible iniciar sesión."
+                );
+            }
 
-        // USUARIO TEMPORAL PARA DESARROLLO
-        if (
-            credenciales.usuario.trim() === "admin" &&
-            credenciales.password === "123456"
-        ) {
+            // Obtener información del backend
+            const tokenBackend = response.data.token;
+            const usuarioBackend = response.data.usuario;
 
-            const nuevoToken = "TOKEN-LOCAL-DESARROLLO";
+            if (!usuarioBackend) {
+                throw new Error("El backend no devolvió información del usuario.");
+            }
 
+            // Normalizar información del usuario
             const nuevoUsuario = {
-                idUsuario: 1,
-                nombre: "Administrador",
-                usuario: "admin",
-                correo: "admin@nexus.com",
-                rol: "ADMIN",
+                idUsuario: usuarioBackend.id_usuario,
+                usuario: usuarioBackend.usuario,
+                idRol: usuarioBackend.id_rol,
+                rol: usuarioBackend.rol,
+                idCaja: Number(usuarioBackend.id_caja) || 0,
             };
 
             // Guardar sesión
-            localStorage.setItem("nexus_token", nuevoToken);
-
+            localStorage.setItem("nexus_token", tokenBackend);
             localStorage.setItem(
                 "nexus_usuario",
                 JSON.stringify(nuevoUsuario)
             );
 
             // Actualizar contexto
-            setToken(nuevoToken);
+            setToken(tokenBackend);
             setUsuario(nuevoUsuario);
 
             return nuevoUsuario;
-        }
+        } catch (error) {
+            console.error("Error en login:", error);
 
-        throw new Error("Usuario o contraseña incorrectos.");
+            const mensaje =
+                error.response?.data?.data?.mensaje ||
+                error.response?.data?.description ||
+                error.response?.data?.mensaje ||
+                error.message ||
+                "Error al conectar con el servidor.";
+
+            throw new Error(mensaje);
+        }
     };
 
     // ==========================================
@@ -84,10 +106,8 @@ export const AuthProvider = ({ children }) => {
     // ==========================================
 
     const logout = () => {
-
         localStorage.removeItem("nexus_token");
         localStorage.removeItem("nexus_usuario");
-
         setToken(null);
         setUsuario(null);
     };
@@ -117,7 +137,6 @@ export const AuthProvider = ({ children }) => {
 // ==========================================
 
 export const useAuth = () => {
-
     const context = useContext(AuthContext);
 
     if (!context) {
