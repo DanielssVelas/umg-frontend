@@ -42,6 +42,11 @@ const menuItems = [
     path: "/venta",
     icon: <AssessmentRoundedIcon />,
   },
+  {
+    label: "Caja",
+    path: "/caja",
+    icon: <AssessmentRoundedIcon />,
+  },
 ];
 
 export default function MainLayout() {
