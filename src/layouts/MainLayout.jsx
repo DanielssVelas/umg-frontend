@@ -46,6 +46,8 @@ import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
+import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
+import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 
 // AUTENTICACIÓN
 import { useAuth } from "../auth/AuthContext";
@@ -75,6 +77,16 @@ const menuItems = [
         label: "Caja",
         path: "/caja",
         icon: <AccountBalanceWalletRoundedIcon />,
+    },
+    {
+        label: "Proveedores",
+        path: "/proveedores",
+        icon: <LocalShippingRoundedIcon />,
+    },
+    {
+        label: "Usuarios",
+        path: "/usuarios",
+        icon: <PeopleAltRoundedIcon />,
     },
 ];
 
