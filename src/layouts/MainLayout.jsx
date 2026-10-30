@@ -30,6 +30,7 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
+import RequestQuoteRoundedIcon from "@mui/icons-material/RequestQuoteRounded";
 
 const drawerWidth = 260;
 
@@ -53,6 +54,11 @@ const menuItems = [
     label: "Caja",
     path: "/caja",
     icon: <AssessmentRoundedIcon />,
+  },
+  {
+    label: "Cotizaciones",
+    path: "/cotizaciones",
+    icon: <RequestQuoteRoundedIcon />,
   },
 ];
 

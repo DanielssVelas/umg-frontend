@@ -6,7 +6,7 @@ import Ventas from "../components/ventas";
 import Caja from "../components/caja";
 import Compras from "../components/compras";
 import HistorialCompras from "../components/historial-compras";
-
+import Cotizaciones from "../components/cotizaciones";
 
 export default function AppRoutes() {
   return (
@@ -17,6 +17,7 @@ export default function AppRoutes() {
         <Route path="caja" element={<Caja />} />
         <Route path="compras" element={<Compras />} />
         <Route path="historial-compras" element={<HistorialCompras />} />
+        <Route path="cotizaciones" element={<Cotizaciones />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
