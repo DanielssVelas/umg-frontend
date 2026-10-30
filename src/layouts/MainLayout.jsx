@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+
 import {
   AppBar,
   Avatar,
@@ -28,6 +29,7 @@ import LayersRoundedIcon from "@mui/icons-material/LayersRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
+import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 
 const drawerWidth = 260;
 
@@ -46,6 +48,11 @@ const menuItems = [
     label: "Proveedores",
     path: "/proveedores",
     icon: <LocalShippingRoundedIcon />,
+  },
+  {
+    label: "Usuarios",
+    path: "/usuarios",
+    icon: <PeopleAltRoundedIcon />,
   },
 ];
 
@@ -103,6 +110,7 @@ export default function MainLayout() {
           <Typography fontSize={19} fontWeight={800} letterSpacing={1}>
             NEXUS
           </Typography>
+
           <Typography
             fontSize={10}
             color="#9CA3AF"
@@ -148,17 +156,21 @@ export default function MainLayout() {
                   borderRadius: 2,
                   color: selected ? "#FFFFFF" : "#9CA3AF",
                   transition: "all .2s ease",
+
                   "& .MuiListItemIcon-root": {
                     minWidth: 38,
                     color: "inherit",
                   },
+
                   "&.Mui-selected": {
                     bgcolor: "#2563EB",
                     boxShadow: "0 5px 15px rgba(37,99,235,.2)",
                   },
+
                   "&.Mui-selected:hover": {
                     bgcolor: "#1D4ED8",
                   },
+
                   "&:hover": {
                     bgcolor: "#1F2937",
                     color: "#FFFFFF",
@@ -166,6 +178,7 @@ export default function MainLayout() {
                 }}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
+
                 <ListItemText
                   primary={item.label}
                   primaryTypographyProps={{
@@ -178,6 +191,7 @@ export default function MainLayout() {
           })}
         </List>
 
+        {/* PREFERENCIAS */}
         <Typography
           sx={{
             px: 1.5,
@@ -192,33 +206,43 @@ export default function MainLayout() {
           PREFERENCIAS
         </Typography>
 
-        <ListItemButton
-          onClick={() => goTo("/configuracion")}
-          sx={{
-            minHeight: 48,
-            px: 1.5,
-            borderRadius: 2,
-            color: location.pathname.startsWith("/configuracion")
-              ? "#FFFFFF"
-              : "#9CA3AF",
-            "& .MuiListItemIcon-root": {
-              minWidth: 38,
-              color: "inherit",
-            },
-            "&:hover": {
-              bgcolor: "#1F2937",
-              color: "#FFFFFF",
-            },
-          }}
-        >
-          <ListItemIcon>
-            <SettingsRoundedIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Configuración"
-            primaryTypographyProps={{ fontSize: 13 }}
-          />
-        </ListItemButton>
+        <List disablePadding>
+          <ListItemButton
+            selected={location.pathname.startsWith("/configuracion")}
+            onClick={() => goTo("/configuracion")}
+            sx={{
+              minHeight: 48,
+              px: 1.5,
+              borderRadius: 2,
+              color: location.pathname.startsWith("/configuracion")
+                ? "#FFFFFF"
+                : "#9CA3AF",
+
+              "& .MuiListItemIcon-root": {
+                minWidth: 38,
+                color: "inherit",
+              },
+
+              "&.Mui-selected": {
+                bgcolor: "#2563EB",
+              },
+
+              "&:hover": {
+                bgcolor: "#1F2937",
+                color: "#FFFFFF",
+              },
+            }}
+          >
+            <ListItemIcon>
+              <SettingsRoundedIcon />
+            </ListItemIcon>
+
+            <ListItemText
+              primary="Configuración"
+              primaryTypographyProps={{ fontSize: 13 }}
+            />
+          </ListItemButton>
+        </List>
       </Box>
 
       {/* PERFIL INFERIOR */}
@@ -250,6 +274,7 @@ export default function MainLayout() {
             <Typography fontSize={13} fontWeight={600} noWrap>
               Administrador
             </Typography>
+
             <Typography fontSize={11} color="#9CA3AF" noWrap>
               admin@ejemplo.com
             </Typography>
@@ -315,6 +340,7 @@ export default function MainLayout() {
             }}
           >
             <SearchRoundedIcon sx={{ color: "#9CA3AF", fontSize: 21 }} />
+
             <InputBase
               placeholder="Buscar..."
               sx={{ ml: 1, flex: 1, fontSize: 13, py: 0.5 }}
