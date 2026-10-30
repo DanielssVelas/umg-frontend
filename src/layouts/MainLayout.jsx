@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 import {
     Outlet,
@@ -48,6 +49,9 @@ import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownR
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
+import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
+import RequestQuoteRoundedIcon from "@mui/icons-material/RequestQuoteRounded";
 
 // AUTENTICACIÓN
 import { useAuth } from "../auth/AuthContext";
@@ -58,41 +62,16 @@ import { useAuth } from "../auth/AuthContext";
 
 const drawerWidth = 260;
 
-// ==========================================
-// OPCIONES DEL MENÚ
-// ==========================================
-
-const menuItems = [
-    {
-        label: "Productos",
-        path: "/productos",
-        icon: <Inventory2RoundedIcon />,
-    },
-    {
-        label: "Ventas",
-        path: "/venta",
-        icon: <PointOfSaleRoundedIcon />,
-    },
-    {
-        label: "Caja",
-        path: "/caja",
-        icon: <AccountBalanceWalletRoundedIcon />,
-    },
-    {
-        label: "Proveedores",
-        path: "/proveedores",
-        icon: <LocalShippingRoundedIcon />,
-    },
-    {
-        label: "Usuarios",
-        path: "/usuarios",
-        icon: <PeopleAltRoundedIcon />,
-    },
-];
-
-// ==========================================
-// OBTENER INICIALES
-// ==========================================
+const iconMap = {
+    Inventory2Rounded: <Inventory2RoundedIcon />,
+    PointOfSaleRounded: <PointOfSaleRoundedIcon />,
+    AccountBalanceWalletRounded: <AccountBalanceWalletRoundedIcon />,
+    LocalShippingRounded: <LocalShippingRoundedIcon />,
+    PeopleAltRounded: <PeopleAltRoundedIcon />,
+    ShoppingCartRounded: <ShoppingCartRoundedIcon />,
+    RequestQuoteRounded: <RequestQuoteRoundedIcon />,
+    SettingsRounded: <SettingsRoundedIcon />,
+};
 
 const obtenerIniciales = (nombre = "") => {
     const partes = nombre.trim().split(/\s+/).filter(Boolean);
@@ -110,6 +89,46 @@ const obtenerIniciales = (nombre = "") => {
 // ==========================================
 
 export default function MainLayout() {
+
+    const [menuItems, setMenuItems] = useState([]);
+    const [loadingMenu, setLoadingMenu] = useState(true);
+
+    useEffect(() => {
+        const obtenerModulos = async () => {
+            try {
+                const token = localStorage.getItem("nexus_token");
+                const logerUser = JSON.parse(localStorage.getItem("nexus_usuario"));
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_URL}/modulos/${logerUser.idRol}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const rows = response.data?.data?.rows ?? response.data?.rows ?? [];
+
+                setMenuItems(
+                    rows
+                        .filter((modulo) => modulo.ESTADO === "A")
+                        .map((modulo) => ({
+                            id: modulo.ID_MODULO,
+                            label: modulo.NOMBRE,
+                            path: modulo.RUTA,
+                            icon: iconMap[modulo.ICONO] || <LayersRoundedIcon />,
+                        }))
+                );
+            } catch (error) {
+                console.error("Error obteniendo módulos:", error);
+            } finally {
+                setLoadingMenu(false);
+            }
+        };
+
+        obtenerModulos();
+    }, []);
 
     const [mobileOpen, setMobileOpen] = useState(false);
 
