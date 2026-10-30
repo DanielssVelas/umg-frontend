@@ -31,8 +31,12 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import RequestQuoteRoundedIcon from "@mui/icons-material/RequestQuoteRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import PointOfSaleRoundedIcon from "@mui/icons-material/PointOfSaleRounded";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
+
+// USUARIO PROVISIONAL HASTA DESARROLLAR EL LOGIN
+const USUARIO_DEFAULT = 1;
 
 const formatoMoneda = (valor) =>
   new Intl.NumberFormat("es-GT", {
@@ -66,12 +70,15 @@ export default function Cotizaciones() {
   const [estadoFiltro, setEstadoFiltro] = useState("TODOS");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mensajeExito, setMensajeExito] = useState("");
 
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [detalle, setDetalle] = useState([]);
   const [cotizacionSeleccionada, setCotizacionSeleccionada] =
     useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+
+  const [cotizacionEnProceso, setCotizacionEnProceso] = useState(null);
 
   const cargarCotizaciones = async () => {
     try {
@@ -86,13 +93,9 @@ export default function Cotizaciones() {
         `${API_URL.replace(/\/$/, "")}/historial-cotizaciones`
       );
 
-      if (!response.ok) {
-        throw new Error("No se pudo consultar el historial.");
-      }
-
       const resultado = await response.json();
 
-      if (!resultado.result || !resultado.data?.flag) {
+      if (!response.ok || !resultado.result || !resultado.data?.flag) {
         throw new Error(
           resultado.data?.mensaje || "Error al cargar las cotizaciones."
         );
@@ -137,13 +140,9 @@ export default function Cotizaciones() {
         `${API_URL.replace(/\/$/, "")}/detalle-cotizacion/${cotizacion.ID_COTIZACION}`
       );
 
-      if (!response.ok) {
-        throw new Error("No se pudo consultar el detalle.");
-      }
-
       const resultado = await response.json();
 
-      if (!resultado.result || !resultado.data?.flag) {
+      if (!response.ok || !resultado.result || !resultado.data?.flag) {
         throw new Error("Error al consultar los productos.");
       }
 
@@ -153,6 +152,108 @@ export default function Cotizaciones() {
       setDetalleAbierto(false);
     } finally {
       setLoadingDetalle(false);
+    }
+  };
+
+  // CONVERTIR COTIZACIÓN EN VENTA
+  const convertirEnVenta = async (cotizacion) => {
+    const idCotizacion = cotizacion.ID_COTIZACION;
+
+    if (cotizacion.ESTADO !== "PENDIENTE") {
+      setError("Solamente puedes convertir cotizaciones pendientes.");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Deseas convertir la cotización #${idCotizacion} en una venta?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setCotizacionEnProceso(idCotizacion);
+      setError("");
+      setMensajeExito("");
+
+      // 1. Consultar la caja abierta del usuario
+      const respuestaCaja = await fetch(
+        `${API_URL.replace(/\/$/, "")}/check-account/${USUARIO_DEFAULT}`
+      );
+
+      const resultadoCaja = await respuestaCaja.json();
+
+      if (
+        !respuestaCaja.ok ||
+        !resultadoCaja.result ||
+        !resultadoCaja.data?.flag
+      ) {
+        throw new Error(
+          resultadoCaja.data?.mensaje || "No se pudo consultar la caja."
+        );
+      }
+
+      const cajasAbiertas = resultadoCaja.data.rows || [];
+
+      if (cajasAbiertas.length === 0) {
+        throw new Error(
+          "No tienes una caja abierta. Debes aperturar una caja antes de convertir la cotización."
+        );
+      }
+
+      // 2. Obtener los datos de la caja abierta
+      const caja = cajasAbiertas[0];
+
+      if (
+        Number(caja.idUsuario) !== USUARIO_DEFAULT ||
+        String(caja.estado).toUpperCase() !== "ABIERTA"
+      ) {
+        throw new Error("No se encontró una caja abierta válida para este usuario.");
+      }
+
+      // 3. Enviar la conversión al backend
+      const respuestaConversion = await fetch(
+        `${API_URL.replace(/\/$/, "")}/convertir-cotizacion/${idCotizacion}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idUsuario: caja.idUsuario,
+            idCaja: caja.idCaja,
+          }),
+        }
+      );
+
+      const resultadoConversion = await respuestaConversion.json();
+
+      if (
+        !respuestaConversion.ok ||
+        !resultadoConversion.result ||
+        !resultadoConversion.data?.flag
+      ) {
+        throw new Error(
+          resultadoConversion.data?.mensaje ||
+            "No se pudo convertir la cotización en venta."
+        );
+      }
+
+      // 4. Mostrar éxito y actualizar historial
+      setMensajeExito(
+        `¡Cotización #${idCotizacion} convertida en venta correctamente!`
+      );
+
+      if (
+        cotizacionSeleccionada?.ID_COTIZACION === idCotizacion
+      ) {
+        setDetalleAbierto(false);
+      }
+
+      await cargarCotizaciones();
+    } catch (err) {
+      setError(err.message || "Error al convertir la cotización.");
+    } finally {
+      setCotizacionEnProceso(null);
     }
   };
 
@@ -213,7 +314,7 @@ export default function Cotizaciones() {
         </Button>
       </Box>
 
-      {/* MENSAJE DE ERROR */}
+      {/* MENSAJES */}
       {error && (
         <Alert
           severity="error"
@@ -221,6 +322,16 @@ export default function Cotizaciones() {
           onClose={() => setError("")}
         >
           {error}
+        </Alert>
+      )}
+
+      {mensajeExito && (
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setMensajeExito("")}
+        >
+          {mensajeExito}
         </Alert>
       )}
 
@@ -329,7 +440,7 @@ export default function Cotizaciones() {
 
           <IconButton
             onClick={cargarCotizaciones}
-            disabled={loading}
+            disabled={loading || cotizacionEnProceso !== null}
             title="Actualizar historial"
           >
             <RefreshRoundedIcon />
@@ -417,17 +528,19 @@ export default function Cotizaciones() {
 
               <TableBody>
                 {cotizacionesFiltradas.map((item) => {
-                  const estado = item.ESTADO || "PENDIENTE";
-                  const estilo =
+                const estado = String(item.ESTADO || "PENDIENTE")
+                    .trim()
+                    .toUpperCase();
+
+                const estilo =
                     coloresEstado[estado] || coloresEstado.PENDIENTE;
 
                   return (
-                    <TableRow
-                      key={item.ID_COTIZACION}
-                      hover
-                    >
-                      <TableCell fontWeight={700}>
-                        #{item.ID_COTIZACION}
+                    <TableRow key={item.ID_COTIZACION} hover>
+                      <TableCell>
+                        <Typography fontWeight={700}>
+                          #{item.ID_COTIZACION}
+                        </Typography>
                       </TableCell>
 
                       <TableCell>
@@ -464,18 +577,52 @@ export default function Cotizaciones() {
                       </TableCell>
 
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => abrirDetalle(item)}
-                          title="Ver detalle"
-                          sx={{
-                            color: "#2563EB",
-                            bgcolor: "#EFF6FF",
-                            "&:hover": { bgcolor: "#DBEAFE" },
-                          }}
-                        >
-                          <VisibilityRoundedIcon fontSize="small" />
-                        </IconButton>
+                        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => abrirDetalle(item)}
+                            title="Ver detalle"
+                            sx={{
+                              color: "#2563EB",
+                              bgcolor: "#EFF6FF",
+                              "&:hover": { bgcolor: "#DBEAFE" },
+                            }}
+                          >
+                            <VisibilityRoundedIcon fontSize="small" />
+                          </IconButton>
+
+                          {estado === "PENDIENTE" && (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={
+                                cotizacionEnProceso === item.ID_COTIZACION ? (
+                                  <CircularProgress size={15} color="inherit" />
+                                ) : (
+                                  <PointOfSaleRoundedIcon />
+                                )
+                              }
+                              disabled={cotizacionEnProceso !== null}
+                              onClick={() => convertirEnVenta(item)}
+                              sx={{
+                                bgcolor: "#16A34A",
+                                textTransform: "none",
+                                fontSize: 11,
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                                boxShadow: "none",
+                                "&:hover": {
+                                  bgcolor: "#15803D",
+                                  boxShadow: "none",
+                                },
+                              }}
+                            >
+                              {cotizacionEnProceso === item.ID_COTIZACION
+                                ? "Procesando..."
+                                : "Convertir en venta"}
+                            </Button>
+                          )}
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -485,10 +632,7 @@ export default function Cotizaciones() {
                   <TableRow>
                     <TableCell colSpan={7}>
                       <Box sx={{ py: 5, textAlign: "center" }}>
-                        <Typography
-                          color="text.secondary"
-                          fontWeight={600}
-                        >
+                        <Typography color="text.secondary" fontWeight={600}>
                           No se encontraron cotizaciones.
                         </Typography>
                       </Box>
