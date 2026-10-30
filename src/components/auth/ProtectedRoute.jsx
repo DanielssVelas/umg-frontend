@@ -12,7 +12,7 @@ export default function ProtectedRoute({ roles }) {
     roles &&
     (!usuario || !roles.includes(usuario.rol))
   ) {
-    return <Navigate to="/productos" replace />;
+    return <Navigate to="/inicio" replace />;
   }
 
   return <Outlet />;

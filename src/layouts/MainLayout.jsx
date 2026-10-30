@@ -50,8 +50,8 @@ import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
-import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import RequestQuoteRoundedIcon from "@mui/icons-material/RequestQuoteRounded";
+import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 
 // AUTENTICACIÓN
 import { useAuth } from "../auth/AuthContext";
@@ -71,6 +71,7 @@ const iconMap = {
     ShoppingCartRounded: <ShoppingCartRoundedIcon />,
     RequestQuoteRounded: <RequestQuoteRoundedIcon />,
     SettingsRounded: <SettingsRoundedIcon />,
+    DashboardRounded: <DashboardRoundedIcon />,
 };
 
 const obtenerIniciales = (nombre = "") => {
