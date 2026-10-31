@@ -267,14 +267,6 @@ export default function MainLayout() {
                     >
                         NEXUS
                     </Typography>
-
-                    <Typography
-                        fontSize={10}
-                        color="#9CA3AF"
-                        letterSpacing={1.5}
-                    >
-                        ADMINISTRATION
-                    </Typography>
                 </Box>
             </Box>
 
