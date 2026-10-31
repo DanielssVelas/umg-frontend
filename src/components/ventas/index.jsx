@@ -26,19 +26,10 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import useToast from "../commonts/useToast";
-import { Delete, X } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
 import useConfirm from "../commonts/useConfirm";
 import { useAuth } from "../../auth/AuthContext";
-
-
 const api = import.meta.env.VITE_BACKEND_URL;
-
-
-const CLIENTES_TEMPORALES = [
-  { id: 1, nombre: "Cliente general" },
-  { id: 2, nombre: "Cliente 2" },
-  { id: 3, nombre: "Cliente 3" },
-];
 
 const TIPOS_PAGO = [
   { valor: "EFECTIVO", etiqueta: "Efectivo" },
@@ -65,6 +56,8 @@ export default function Ventas() {
   const [carrito, setCarrito] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [modalProductosAbierto, setModalProductosAbierto] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
 
   const [clienteId, setClienteId] = useState(1);
   const [tipoPago, setTipoPago] = useState("EFECTIVO");
@@ -92,8 +85,24 @@ export default function Ventas() {
     }
   };
 
+  const cargarClientes = async () => {
+    setLoadingClientes(true);
+    try {
+      const respuesta = await axios.get(`${api}/clientes`);
+      // El backend puede devolver { data: { rows } } o un array directo
+      const data = respuesta.data?.data?.data
+      setClientes(data || []);
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+      showToast("No se pudieron cargar los productos.", "error");
+    } finally {
+      setLoadingClientes(false);
+    }
+  };
+
   useEffect(() => {
     cargarProductos();
+    cargarClientes();
   }, []);
 
   const productosFiltrados = useMemo(() => {
@@ -236,8 +245,8 @@ export default function Ventas() {
     }
   };
 
-  const clienteSeleccionado = CLIENTES_TEMPORALES.find(
-    (cliente) => cliente.id === Number(clienteId)
+  const clienteSeleccionado = clientes.find(
+    (cliente) => cliente.ID_CLIENTE === Number(clienteId)
   );
 
   return (
@@ -459,9 +468,9 @@ export default function Ventas() {
                   onChange={(event) => setClienteId(event.target.value)}
                   disabled={registrando}
                 >
-                  {CLIENTES_TEMPORALES.map((cliente) => (
-                    <MenuItem key={cliente.id} value={cliente.id}>
-                      {cliente.nombre}
+                  {clientes.map((cliente) => (
+                    <MenuItem key={cliente.ID_CLIENTE} value={cliente.ID_CLIENTE}>
+                      {cliente.NOMBRE}
                     </MenuItem>
                   ))}
                 </Select>
