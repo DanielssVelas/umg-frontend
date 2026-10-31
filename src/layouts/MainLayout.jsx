@@ -366,117 +366,20 @@ export default function MainLayout() {
                         );
                     })}
                 </List>
-
-                {/* PREFERENCIAS */}
-
-                <Typography
-                    sx={{
-                        px: 1.5,
-                        mt: 4,
-                        mb: 1.5,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: 1.5,
-                        color: "#9CA3AF",
-                    }}
-                >
-                    PREFERENCIAS
-                </Typography>
-
-                <ListItemButton
-                    onClick={() => goTo("/configuracion")}
-                    selected={location.pathname.startsWith("/configuracion")}
-                    sx={{
-                        minHeight: 48,
-                        px: 1.5,
-                        borderRadius: 2,
-                        color: "#9CA3AF",
-
-                        "& .MuiListItemIcon-root": {
-                            minWidth: 38,
-                            color: "inherit",
-                        },
-
-                        "&.Mui-selected": {
-                            bgcolor: "#2563EB",
-                            color: "#FFFFFF",
-                        },
-
-                        "&:hover": {
-                            bgcolor: "#1F2937",
-                            color: "#FFFFFF",
-                        },
-                    }}
-                >
-                    <ListItemIcon>
-                        <SettingsRoundedIcon />
-                    </ListItemIcon>
-
-                    <ListItemText
-                        primary="Configuración"
-                        primaryTypographyProps={{
-                            fontSize: 13,
-                        }}
-                    />
-                </ListItemButton>
             </Box>
-
-            {/* PERFIL INFERIOR */}
-
             <Box sx={{ p: 2 }}>
-                <Divider
-                    sx={{
-                        mb: 2,
-                        borderColor: "#273244",
-                    }}
-                />
-
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.2,
-                        p: 1,
-                        borderRadius: 2,
-                    }}
-                >
-                    <Avatar
-                        sx={{
-                            bgcolor: "#DBEAFE",
-                            color: "#1D4ED8",
-                            width: 38,
-                            height: 38,
-                            fontWeight: 700,
-                            fontSize: 13,
-                        }}
+                <Divider sx={{ my: 1.5, borderColor: "#273244" }} />
+                <Box sx={{ textAlign: "center", pt: 0.5 }}>
+                    <Typography
+                    fontSize={10}
+                    color="#9CA3AF"
+                    fontWeight={500}
                     >
-                        {iniciales}
-                    </Avatar>
-
-                    <Box
-                        sx={{
-                            flex: 1,
-                            minWidth: 0,
-                        }}
-                    >
-                        <Typography
-                            fontSize={13}
-                            fontWeight={600}
-                            noWrap
-                        >
-                            {nombreUsuario}
-                        </Typography>
-
-                        <Typography
-                            fontSize={11}
-                            color="#9CA3AF"
-                            noWrap
-                        >
-                            {correoUsuario || usuario?.rol || "Usuario del sistema"}
-                        </Typography>
-                    </Box>
+                    © {new Date().getFullYear()} Versión V.1.09.0
+                    </Typography>
                 </Box>
             </Box>
+
         </Box>
     );
 
@@ -550,13 +453,6 @@ export default function MainLayout() {
                             color="#172033"
                         >
                             {currentPage}
-                        </Typography>
-
-                        <Typography
-                            fontSize={11}
-                            color="text.secondary"
-                        >
-                            NEXUS Administration
                         </Typography>
                     </Box>
 
