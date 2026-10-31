@@ -28,13 +28,11 @@ import axios from "axios";
 import useToast from "../commonts/useToast";
 import { Delete, X } from "@mui/icons-material";
 import useConfirm from "../commonts/useConfirm";
+import { useAuth } from "../../auth/AuthContext";
+
 
 const api = import.meta.env.VITE_BACKEND_URL;
 
-const VENTA_DEFAULT = {
-  idUsuario: 2,
-  idCaja: 1,
-};
 
 const CLIENTES_TEMPORALES = [
   { id: 1, nombre: "Cliente general" },
@@ -56,6 +54,11 @@ const formatoMoneda = (valor) =>
   }).format(Number(valor) || 0);
 
 export default function Ventas() {
+  const { usuario } = useAuth()
+  const VENTA_DEFAULT = {
+      idUsuario: usuario?.idUsuario,
+      idCaja: usuario?.idCaja,
+  }
   const { confirm, ConfirmDialogElement } = useConfirm();
   const { showToast } = useToast();
   const [productos, setProductos] = useState([]);
@@ -208,22 +211,17 @@ export default function Ventas() {
     setRegistrando(true);
     try {
       const respuesta = await axios.post(`${api}/registrar-venta`, venta);
-      showToast(
-        respuesta.data?.mensaje ||
-          respuesta.data?.message ||
-          "Venta registrada correctamente.",
-        "success"
-      );
-      
-      // Limpiamos el estado
-      setCarrito([]);
-      setBusqueda("");
-      setClienteId(1);
-      setTipoPago("EFECTIVO");
-      setModalProductosAbierto(false);
-
-      // Recargamos para obtener el stock real actualizado por el backend
-      cargarProductos();
+      const { data } = respuesta.data
+      console.log('respuesta', data)
+      showToast(data.mensaje, data.flag ? 'success' : 'warning');
+      if(data.flag) {
+        setCarrito([]);
+        setBusqueda("");
+        setClienteId(1);
+        setTipoPago("EFECTIVO");
+        setModalProductosAbierto(false);
+        cargarProductos();
+      }
 
     } catch (error) {
       console.error("Error al registrar la venta:", error);
@@ -277,27 +275,28 @@ export default function Ventas() {
           }}
         >
           {/* Header fijo */}
-          <Stack
+         <Stack
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            spacing={1}
-            sx={{ mb: 1.5, flexShrink: 0 }}
+            spacing={1.5}
+            sx={{ mb: 2 }}
           >
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="subtitle1" fontWeight={800} noWrap>
+              <Typography variant="subtitle2" fontWeight="bold" lineHeight={1.2} noWrap>
                 Detalle de la venta
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" noWrap>
                 {carrito.length} productos · {totalUnidades} unidades
               </Typography>
             </Box>
+
             <Button
               size="small"
               variant="contained"
               onClick={() => setModalProductosAbierto(true)}
               disabled={cargando || registrando}
-              sx={{ flexShrink: 0, whiteSpace: "nowrap", textTransform: "none" }}
+              sx={{ flexShrink: 0 }}
             >
               + Agregar
             </Button>

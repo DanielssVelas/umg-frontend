@@ -40,6 +40,7 @@ import {
     Close,
     AccountBalanceWallet,
 } from "@mui/icons-material";
+import { useAuth } from "../../auth/AuthContext";
 
 // ==========================================
 // CONFIGURACIÓN
@@ -49,12 +50,7 @@ const api = import.meta.env.VITE_BACKEND_URL
 const API = {
     consultarCaja: `${api}/check-account`,
     gestionarCaja: `${api}/manage-cash`,
-};
-
-const USUARIO = {
-    id: 1,
-    nombre: "Administrador",
-};
+}
 
 const initialForm = {
     nombre: "Caja principal",
@@ -77,6 +73,12 @@ const fechaFormato = (fecha) => {
 };
 
 const CajaPage = () => {
+    const { usuario } = useAuth();
+
+    const USUARIO = {
+        id: usuario?.idUsuario,
+        nombre: usuario?.usuario,
+    }
     const [cajas, setCajas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
