@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -52,6 +51,7 @@ import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 import RequestQuoteRoundedIcon from "@mui/icons-material/RequestQuoteRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import AssessmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
 
 // AUTENTICACIÓN
 import { useAuth } from "../auth/AuthContext";
@@ -72,6 +72,7 @@ const iconMap = {
     RequestQuoteRounded: <RequestQuoteRoundedIcon />,
     SettingsRounded: <SettingsRoundedIcon />,
     DashboardRounded: <DashboardRoundedIcon />,
+    AssessmentRounded: <AssessmentRoundedIcon />,
 };
 
 const obtenerIniciales = (nombre = "") => {
@@ -85,20 +86,71 @@ const obtenerIniciales = (nombre = "") => {
         .join("");
 };
 
+const normalizarRuta = (ruta = "") =>
+    `/${String(ruta).replace(/^\/+|\/+$/g, "")}`;
+
+// ==========================================
+// MÓDULOS DE RESPALDO
+// ==========================================
+
+const modulosFijos = [
+    {
+        id: "clientes",
+        label: "Clientes",
+        path: "/clientes",
+        icon: <PeopleAltRoundedIcon />,
+    },
+    {
+        id: "kardex",
+        label: "Kardex",
+        path: "/kardex",
+        icon: <AssessmentRoundedIcon />,
+    },
+];
+
 // ==========================================
 // COMPONENTE PRINCIPAL
 // ==========================================
 
 export default function MainLayout() {
-
     const [menuItems, setMenuItems] = useState([]);
     const [loadingMenu, setLoadingMenu] = useState(true);
 
+    // ==========================================
+    // OBTENER MÓDULOS
+    // ==========================================
+
     useEffect(() => {
+        let activo = true;
+
+        const agregarModulosFijos = (modulos = []) => {
+            const resultado = [...modulos];
+
+            modulosFijos.forEach((fijo) => {
+                const existe = resultado.some(
+                    (modulo) =>
+                        normalizarRuta(modulo.path) === fijo.path
+                );
+
+                if (!existe) {
+                    resultado.push(fijo);
+                }
+            });
+
+            return resultado;
+        };
+
         const obtenerModulos = async () => {
             try {
                 const token = localStorage.getItem("nexus_token");
-                const logerUser = JSON.parse(localStorage.getItem("nexus_usuario"));
+
+                const logerUser = JSON.parse(
+                    localStorage.getItem("nexus_usuario") || "null"
+                );
+
+                if (!logerUser?.idRol) {
+                    throw new Error("No se encontró el rol del usuario");
+                }
 
                 const response = await axios.get(
                     `${import.meta.env.VITE_BACKEND_URL}/modulos/${logerUser.idRol}`,
@@ -109,31 +161,58 @@ export default function MainLayout() {
                     }
                 );
 
-                const rows = response.data?.data?.rows ?? response.data?.rows ?? [];
+                const rows =
+                    response.data?.data?.rows ??
+                    response.data?.rows ??
+                    [];
 
-                setMenuItems(
-                    rows
+                const modulosOracle = Array.isArray(rows)
+                    ? rows
                         .filter((modulo) => modulo.ESTADO === "A")
                         .map((modulo) => ({
                             id: modulo.ID_MODULO,
                             label: modulo.NOMBRE,
-                            path: modulo.RUTA,
-                            icon: iconMap[modulo.ICONO] || <LayersRoundedIcon />,
+                            path: normalizarRuta(modulo.RUTA),
+                            icon:
+                                iconMap[modulo.ICONO] ||
+                                <LayersRoundedIcon />,
                         }))
-                );
+                    : [];
+
+                if (activo) {
+                    setMenuItems(
+                        agregarModulosFijos(modulosOracle)
+                    );
+                }
             } catch (error) {
                 console.error("Error obteniendo módulos:", error);
+
+                // Mantener los módulos de respaldo
+                // sin eliminar los que ya estén cargados.
+                if (activo) {
+                    setMenuItems((actuales) =>
+                        agregarModulosFijos(actuales)
+                    );
+                }
             } finally {
-                setLoadingMenu(false);
+                if (activo) {
+                    setLoadingMenu(false);
+                }
             }
         };
 
         obtenerModulos();
+
+        return () => {
+            activo = false;
+        };
     }, []);
 
-    const [mobileOpen, setMobileOpen] = useState(false);
+    // ==========================================
+    // ESTADOS
+    // ==========================================
 
-    // ESTADOS DEL PERFIL
+    const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorPerfil, setAnchorPerfil] = useState(null);
     const [confirmarLogout, setConfirmarLogout] = useState(false);
 
@@ -170,7 +249,7 @@ export default function MainLayout() {
     const currentPage =
         menuItems.find(
             (item) =>
-                item.path === location.pathname
+                normalizarRuta(item.path) === location.pathname
         )?.label ??
         (
             location.pathname.startsWith("/configuracion")
@@ -183,7 +262,7 @@ export default function MainLayout() {
     // ==========================================
 
     const goTo = (path) => {
-        navigate(path);
+        navigate(normalizarRuta(path));
         setMobileOpen(false);
     };
 
@@ -259,15 +338,13 @@ export default function MainLayout() {
                     />
                 </Box>
 
-                <Box>
-                    <Typography
-                        fontSize={19}
-                        fontWeight={800}
-                        letterSpacing={1}
-                    >
-                        NEXUS
-                    </Typography>
-                </Box>
+                <Typography
+                    fontSize={19}
+                    fontWeight={800}
+                    letterSpacing={1}
+                >
+                    NEXUS
+                </Typography>
             </Box>
 
             <Divider
@@ -283,6 +360,7 @@ export default function MainLayout() {
                     px: 1.5,
                     pt: 3,
                     flex: 1,
+                    overflowY: "auto",
                 }}
             >
                 <Typography
@@ -300,16 +378,17 @@ export default function MainLayout() {
 
                 <List disablePadding>
                     {menuItems.map((item) => {
+                        const itemPath = normalizarRuta(item.path);
 
                         const selected =
-                            location.pathname === item.path ||
-                            location.pathname.startsWith(`${item.path}/`);
+                            location.pathname === itemPath ||
+                            location.pathname.startsWith(`${itemPath}/`);
 
                         return (
                             <ListItemButton
-                                key={item.path}
+                                key={item.id ?? item.path}
                                 selected={selected}
-                                onClick={() => goTo(item.path)}
+                                onClick={() => goTo(itemPath)}
                                 sx={{
                                     minHeight: 48,
                                     px: 1.5,
@@ -358,20 +437,41 @@ export default function MainLayout() {
                         );
                     })}
                 </List>
+
+                {loadingMenu && (
+                    <Typography
+                        sx={{
+                            color: "#9CA3AF",
+                            fontSize: 12,
+                            px: 1.5,
+                            mt: 2,
+                        }}
+                    >
+                        Cargando módulos...
+                    </Typography>
+                )}
             </Box>
+
+            {/* PIE DEL SIDEBAR */}
+
             <Box sx={{ p: 2 }}>
-                <Divider sx={{ my: 1.5, borderColor: "#273244" }} />
+                <Divider
+                    sx={{
+                        my: 1.5,
+                        borderColor: "#273244",
+                    }}
+                />
+
                 <Box sx={{ textAlign: "center", pt: 0.5 }}>
                     <Typography
-                    fontSize={10}
-                    color="#9CA3AF"
-                    fontWeight={500}
+                        fontSize={10}
+                        color="#9CA3AF"
+                        fontWeight={500}
                     >
-                    © {new Date().getFullYear()} Versión V.1.09.0
+                        ©️ {new Date().getFullYear()} Versión V.1.09.0
                     </Typography>
                 </Box>
             </Box>
-
         </Box>
     );
 
@@ -388,9 +488,7 @@ export default function MainLayout() {
                 bgcolor: "#F3F6FB",
             }}
         >
-            {/* ==================================
-                BARRA SUPERIOR
-            ================================== */}
+            {/* BARRA SUPERIOR */}
 
             <AppBar
                 position="fixed"
@@ -418,8 +516,6 @@ export default function MainLayout() {
                         px: { xs: 2, md: 3 },
                     }}
                 >
-                    {/* BOTÓN MÓVIL */}
-
                     {isMobile && (
                         <IconButton
                             onClick={() => setMobileOpen(true)}
@@ -430,8 +526,6 @@ export default function MainLayout() {
                             <MenuRoundedIcon />
                         </IconButton>
                     )}
-
-                    {/* TÍTULO */}
 
                     <Box
                         sx={{
@@ -508,7 +602,7 @@ export default function MainLayout() {
                         </IconButton>
                     </Tooltip>
 
-                    {/* PERFIL Y MENÚ DE USUARIO */}
+                    {/* PERFIL */}
 
                     <Box
                         sx={{
@@ -618,8 +712,6 @@ export default function MainLayout() {
                                 },
                             }}
                         >
-                            {/* INFORMACIÓN DEL USUARIO */}
-
                             <Box sx={{ px: 2, py: 1.8 }}>
                                 <Stack
                                     direction="row"
@@ -652,15 +744,15 @@ export default function MainLayout() {
                                             fontSize={11}
                                             noWrap
                                         >
-                                            {correoUsuario || usuario?.rol || "Usuario del sistema"}
+                                            {correoUsuario ||
+                                                usuario?.rol ||
+                                                "Usuario del sistema"}
                                         </Typography>
                                     </Box>
                                 </Stack>
                             </Box>
 
                             <Divider />
-
-                            {/* MI CUENTA */}
 
                             <MenuItem
                                 onClick={handleCerrarPerfil}
@@ -677,8 +769,6 @@ export default function MainLayout() {
                             </MenuItem>
 
                             <Divider />
-
-                            {/* CERRAR SESIÓN */}
 
                             <MenuItem
                                 onClick={() => {
@@ -710,9 +800,7 @@ export default function MainLayout() {
                 </Toolbar>
             </AppBar>
 
-            {/* ==================================
-                SIDEBAR
-            ================================== */}
+            {/* SIDEBAR */}
 
             <Box
                 component="nav"
@@ -743,9 +831,7 @@ export default function MainLayout() {
                 </Drawer>
             </Box>
 
-            {/* ==================================
-                CONTENIDO PRINCIPAL
-            ================================== */}
+            {/* CONTENIDO PRINCIPAL */}
 
             <Box
                 component="main"
@@ -768,9 +854,7 @@ export default function MainLayout() {
                 <Outlet />
             </Box>
 
-            {/* ==================================
-                CONFIRMAR CIERRE DE SESIÓN
-            ================================== */}
+            {/* CONFIRMAR CIERRE DE SESIÓN */}
 
             <Dialog
                 open={confirmarLogout}

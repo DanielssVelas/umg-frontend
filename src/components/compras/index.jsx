@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -69,15 +68,15 @@ export default function Compras() {
   const [cargando, setCargando] = useState(false);
   const [cargandoProveedores, setCargandoProveedores] = useState(false);
   const [registrando, setRegistrando] = useState(false);
+  const [errorRegistro, setErrorRegistro] = useState("");
 
-  // Cargar productos desde Oracle
+  // Cargar productos
   const cargarProductos = async () => {
     setCargando(true);
 
     try {
       const respuesta = await axios.get(`${api}/products`);
       const data = respuesta.data?.data?.rows;
-
       setProductos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -87,14 +86,13 @@ export default function Compras() {
     }
   };
 
-  // Cargar proveedores desde Oracle
+  // Cargar proveedores
   const cargarProveedores = async () => {
     setCargandoProveedores(true);
 
     try {
       const respuesta = await axios.get(`${api}/proveedores`);
       const data = respuesta.data?.data?.rows;
-
       setProveedores(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error al cargar proveedores:", error);
@@ -109,7 +107,7 @@ export default function Compras() {
     cargarProveedores();
   }, []);
 
-  // Buscar productos por nombre o código
+  // Buscar productos
   const productosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
 
@@ -123,8 +121,7 @@ export default function Compras() {
     });
   }, [productos, busqueda]);
 
-  // Agregar productos al carrito.
-  // En compras NO se limita la cantidad por el stock actual.
+  // Agregar producto
   const agregarProducto = (producto) => {
     setCarrito((actual) => {
       const encontrado = actual.find(
@@ -134,7 +131,7 @@ export default function Compras() {
       if (encontrado) {
         return actual.map((item) =>
           item.ID_PRODUCTO === producto.ID_PRODUCTO
-            ? { ...item, cantidad: item.cantidad + 1 }
+            ? { ...item, cantidad: Number(item.cantidad) + 1 }
             : item
         );
       }
@@ -151,20 +148,18 @@ export default function Compras() {
     });
   };
 
-  // Modificar cantidades
-  const cambiarCantidad = (id, cambio) => {
+  // Cambiar cantidad
+  const cambiarCantidad = (id, valor) => {
     setCarrito((actual) =>
-      actual
-        .map((item) =>
-          item.ID_PRODUCTO === id
-            ? { ...item, cantidad: item.cantidad + cambio }
-            : item
-        )
-        .filter((item) => item.cantidad > 0)
+      actual.map((item) =>
+        item.ID_PRODUCTO === id
+          ? { ...item, cantidad: valor === "" ? "" : Number(valor) }
+          : item
+      )
     );
   };
 
-  // Modificar precios
+  // Cambiar precio
   const cambiarPrecio = (id, campo, valor) => {
     setCarrito((actual) =>
       actual.map((item) =>
@@ -178,6 +173,7 @@ export default function Compras() {
     );
   };
 
+  // Eliminar producto
   const eliminarProducto = (id) => {
     setCarrito((actual) =>
       actual.filter((item) => item.ID_PRODUCTO !== id)
@@ -186,13 +182,15 @@ export default function Compras() {
 
   // Totales
   const totalUnidades = carrito.reduce(
-    (total, item) => total + item.cantidad,
+    (total, item) => total + (Number(item.cantidad) || 0),
     0
   );
 
   const totalCompra = carrito.reduce(
     (total, item) =>
-      total + item.cantidad * (Number(item.precio_compra) || 0),
+      total +
+      (Number(item.cantidad) || 0) *
+        (Number(item.precio_compra) || 0),
     0
   );
 
@@ -200,11 +198,15 @@ export default function Compras() {
 
   const proveedorSeleccionado = proveedores.find(
     (proveedor) =>
-      proveedor.ID_PROVEEDOR === Number(proveedorId)
+      Number(proveedor.ID_PROVEEDOR) === Number(proveedorId)
   );
 
   // Registrar compra
   const registrarCompra = async () => {
+    if (registrando) return;
+
+    setErrorRegistro("");
+
     if (!proveedorId) {
       showToast("Selecciona un proveedor.", "warning");
       return;
@@ -220,39 +222,47 @@ export default function Compras() {
       return;
     }
 
-    if (
-      carrito.some(
-        (item) =>
-          !Number.isInteger(Number(item.cantidad)) ||
-          Number(item.cantidad) <= 0
-      )
-    ) {
+    const cantidadesInvalidas = carrito.some(
+      (item) =>
+        !Number.isInteger(Number(item.cantidad)) ||
+        Number(item.cantidad) <= 0
+    );
+
+    if (cantidadesInvalidas) {
       showToast("Verifica las cantidades de los productos.", "warning");
       return;
     }
 
-    if (
-      carrito.some(
-        (item) =>
-          item.precio_compra === "" ||
-          !Number.isFinite(Number(item.precio_compra)) ||
-          Number(item.precio_compra) < 0 ||
-          item.precio_venta === "" ||
-          !Number.isFinite(Number(item.precio_venta)) ||
-          Number(item.precio_venta) < 0
-      )
-    ) {
+    const preciosInvalidos = carrito.some(
+      (item) =>
+        item.precio_compra === "" ||
+        !Number.isFinite(Number(item.precio_compra)) ||
+        Number(item.precio_compra) < 0 ||
+        item.precio_venta === "" ||
+        !Number.isFinite(Number(item.precio_venta)) ||
+        Number(item.precio_venta) < 0
+    );
+
+    if (preciosInvalidos) {
       showToast("Verifica los precios de compra y venta.", "warning");
       return;
     }
 
-    const confirmado = await confirm({
-      title: "Confirmar compra",
-      message: `¿Deseas registrar esta compra por ${formatoMoneda(totalCompra)}?`,
-      confirmText: "Registrar compra",
-      cancelText: "Cancelar",
-      confirmColor: "primary",
-    });
+    let confirmado;
+
+    try {
+      confirmado = await confirm({
+        title: "Confirmar compra",
+        message: `¿Deseas registrar esta compra por ${formatoMoneda(totalCompra)}?`,
+        confirmText: "Registrar compra",
+        cancelText: "Cancelar",
+        confirmColor: "primary",
+      });
+    } catch (error) {
+      console.error("Error en confirmación:", error);
+      showToast("No se pudo confirmar la operación.", "error");
+      return;
+    }
 
     if (!confirmado) return;
 
@@ -264,14 +274,16 @@ export default function Compras() {
     }));
 
     const compra = {
-      ...COMPRA_DEFAULT,
+      idUsuario: COMPRA_DEFAULT.idUsuario,
       idProveedor: Number(proveedorId),
       tipoComprobante,
-      serie: serie.trim(),
-      numeroComprobante: numeroComprobante.trim(),
+      serie: serie.trim() || null,
+      numeroComprobante: numeroComprobante.trim() || null,
       detalles,
       total: Number(totalCompra.toFixed(2)),
     };
+
+    console.log("DATOS ENVIADOS A REGISTRAR COMPRA:", compra);
 
     setRegistrando(true);
 
@@ -281,11 +293,18 @@ export default function Compras() {
         compra
       );
 
+      console.log("RESPUESTA DEL BACKEND:", respuesta.data);
+
       const resultado = respuesta.data?.data || respuesta.data;
 
-      if (resultado?.flag === false || respuesta.data?.result === false) {
+      if (
+        resultado?.flag === false ||
+        respuesta.data?.result === false
+      ) {
         throw new Error(
-          resultado?.mensaje || "No fue posible registrar la compra."
+          resultado?.mensaje ||
+            respuesta.data?.mensaje ||
+            "El servidor rechazó el registro."
         );
       }
 
@@ -296,27 +315,33 @@ export default function Compras() {
         "success"
       );
 
-      // Limpiar formulario
+      // Limpiar solamente cuando el registro fue exitoso
       setCarrito([]);
       setBusqueda("");
       setProveedorId("");
       setTipoComprobante("FACTURA");
       setSerie("");
       setNumeroComprobante("");
+      setErrorRegistro("");
       setModalProductosAbierto(false);
 
-      // Actualizar existencias y precios
       await cargarProductos();
-    } catch (error) {
-      console.error("Error al registrar la compra:", error);
 
-      showToast(
+    } catch (error) {
+      console.error("ERROR COMPLETO AL REGISTRAR:", error);
+      console.error("ESTADO HTTP:", error.response?.status);
+      console.error("RESPUESTA DEL BACKEND:", error.response?.data);
+
+      const mensaje =
         error.response?.data?.data?.mensaje ||
-          error.response?.data?.mensaje ||
-          error.message ||
-          "No fue posible registrar la compra.",
-        "error"
-      );
+        error.response?.data?.mensaje ||
+        error.response?.data?.error ||
+        error.message ||
+        "No fue posible registrar la compra.";
+
+      setErrorRegistro(mensaje);
+      showToast(mensaje, "error");
+
     } finally {
       setRegistrando(false);
     }
@@ -348,7 +373,7 @@ export default function Compras() {
           minHeight: 0,
         }}
       >
-        {/* PANEL IZQUIERDO: DETALLE DE COMPRA */}
+        {/* DETALLE DE COMPRA */}
         <Paper
           elevation={0}
           sx={{
@@ -382,7 +407,11 @@ export default function Compras() {
               startIcon={<AddShoppingCartRounded />}
               onClick={() => setModalProductosAbierto(true)}
               disabled={cargando || registrando}
-              sx={{ flexShrink: 0, whiteSpace: "nowrap", textTransform: "none" }}
+              sx={{
+                flexShrink: 0,
+                whiteSpace: "nowrap",
+                textTransform: "none",
+              }}
             >
               Agregar
             </Button>
@@ -390,7 +419,14 @@ export default function Compras() {
 
           <Divider sx={{ mb: 1, flexShrink: 0 }} />
 
-          <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, pr: 0.5 }}>
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              minHeight: 0,
+              pr: 0.5,
+            }}
+          >
             {carrito.length === 0 ? (
               <Box sx={{ py: 6, textAlign: "center" }}>
                 <Typography fontSize={40}>🛒</Typography>
@@ -424,7 +460,8 @@ export default function Compras() {
                           {item.NOMBRE}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Código: {item.ID_PRODUCTO} · Stock actual: {item.STOCK ?? 0}
+                          Código: {item.ID_PRODUCTO} · Stock actual:{" "}
+                          {item.STOCK ?? 0}
                         </Typography>
                       </Box>
 
@@ -434,7 +471,8 @@ export default function Compras() {
                         fontSize={14}
                       >
                         {formatoMoneda(
-                          item.cantidad * (Number(item.precio_compra) || 0)
+                          Number(item.cantidad) *
+                            (Number(item.precio_compra) || 0)
                         )}
                       </Typography>
 
@@ -468,29 +506,12 @@ export default function Compras() {
                         value={item.cantidad}
                         disabled={registrando}
                         inputProps={{ min: 1, step: 1 }}
-                        onChange={(event) => {
-                          const valor = event.target.value;
-                          if (valor === "") {
-                            setCarrito((actual) =>
-                              actual.map((p) =>
-                                p.ID_PRODUCTO === item.ID_PRODUCTO
-                                  ? { ...p, cantidad: "" }
-                                  : p
-                              )
-                            );
-                          } else {
-                            const cantidad = Number(valor);
-                            if (Number.isInteger(cantidad) && cantidad >= 1) {
-                              setCarrito((actual) =>
-                                actual.map((p) =>
-                                  p.ID_PRODUCTO === item.ID_PRODUCTO
-                                    ? { ...p, cantidad }
-                                    : p
-                                )
-                              );
-                            }
-                          }
-                        }}
+                        onChange={(event) =>
+                          cambiarCantidad(
+                            item.ID_PRODUCTO,
+                            event.target.value
+                          )
+                        }
                       />
 
                       <TextField
@@ -555,7 +576,7 @@ export default function Compras() {
           )}
         </Paper>
 
-        {/* PANEL DERECHO: FINALIZAR COMPRA */}
+        {/* FINALIZAR COMPRA */}
         <Paper
           elevation={0}
           sx={{
@@ -576,7 +597,14 @@ export default function Compras() {
             </Typography>
           </Box>
 
-          <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, pr: 0.5 }}>
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              minHeight: 0,
+              pr: 0.5,
+            }}
+          >
             <Stack spacing={1.5} sx={{ pt: 1 }}>
               <FormControl fullWidth size="small">
                 <InputLabel id="proveedor-compra-label">
@@ -621,11 +649,19 @@ export default function Compras() {
                   <Typography variant="caption" color="text.secondary">
                     {proveedorSeleccionado.DIRECCION}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Teléfono: {proveedorSeleccionado.TELEFONO}
                   </Typography>
                   {proveedorSeleccionado.NIT && (
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
                       NIT: {proveedorSeleccionado.NIT}
                     </Typography>
                   )}
@@ -699,7 +735,11 @@ export default function Compras() {
                 <Typography variant="caption" color="text.secondary">
                   Total de la compra
                 </Typography>
-                <Typography variant="h5" fontWeight={900} color="primary.main">
+                <Typography
+                  variant="h5"
+                  fontWeight={900}
+                  color="primary.main"
+                >
                   {formatoMoneda(totalCompra)}
                 </Typography>
               </Box>
@@ -708,6 +748,12 @@ export default function Compras() {
                 <Typography variant="caption" color="text.secondary">
                   Proveedor: {proveedorSeleccionado.NOMBRE}
                 </Typography>
+              )}
+
+              {errorRegistro && (
+                <Alert severity="error">
+                  {errorRegistro}
+                </Alert>
               )}
             </Stack>
           </Box>
@@ -752,10 +798,14 @@ export default function Compras() {
       {/* MODAL DEL CATÁLOGO */}
       <Dialog
         open={modalProductosAbierto}
-        onClose={() => setModalProductosAbierto(false)}
+        onClose={() => {
+          if (!registrando) setModalProductosAbierto(false);
+        }}
         fullWidth
         maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: 2, maxHeight: "85vh" } }}
+        PaperProps={{
+          sx: { borderRadius: 2, maxHeight: "85vh" },
+        }}
       >
         <DialogTitle sx={{ pb: 1, pt: 1.5, px: 2 }}>
           <Stack
@@ -817,10 +867,11 @@ export default function Compras() {
           ) : (
             <Stack spacing={0.75}>
               {productosFiltrados.map((producto) => {
-                const enCarrito = carrito.find(
-                  (item) =>
-                    item.ID_PRODUCTO === producto.ID_PRODUCTO
-                )?.cantidad ?? 0;
+                const enCarrito =
+                  carrito.find(
+                    (item) =>
+                      item.ID_PRODUCTO === producto.ID_PRODUCTO
+                  )?.cantidad ?? 0;
 
                 return (
                   <Card
@@ -828,7 +879,9 @@ export default function Compras() {
                     variant="outlined"
                     sx={{
                       borderRadius: 1.5,
-                      borderColor: enCarrito ? "primary.main" : "#e5e7eb",
+                      borderColor: enCarrito
+                        ? "primary.main"
+                        : "#e5e7eb",
                       bgcolor: enCarrito ? "#f8faff" : "#fff",
                     }}
                   >
@@ -840,7 +893,11 @@ export default function Compras() {
                         spacing={1}
                       >
                         <Box sx={{ minWidth: 0, flex: 1 }}>
-                          <Typography fontWeight={700} fontSize={12.5} noWrap>
+                          <Typography
+                            fontWeight={700}
+                            fontSize={12.5}
+                            noWrap
+                          >
                             {producto.NOMBRE}
                           </Typography>
                           <Typography
@@ -881,6 +938,7 @@ export default function Compras() {
                           >
                             Venta: {formatoMoneda(producto.PRECIO_VENTA)}
                           </Typography>
+
                           <Button
                             size="small"
                             variant="contained"
