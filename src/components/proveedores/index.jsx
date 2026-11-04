@@ -18,6 +18,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import axios from "axios";
 
 export default function Proveedores() {
@@ -28,6 +29,7 @@ export default function Proveedores() {
   const [abierto, setAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const [proveedorId, setProveedorId] = useState(null);
 
   const [formulario, setFormulario] = useState({
     nombre: "",
@@ -67,11 +69,27 @@ export default function Proveedores() {
   }
 
   function abrirFormulario() {
+    setProveedorId(null);
     setFormulario({
       nombre: "",
       direccion: "",
       telefono: "",
       nit: "",
+    });
+    setError("");
+    setAbierto(true);
+  }
+
+  function editarProveedor(proveedor) {
+    const id =
+      proveedor.ID_PROVEEDOR ?? proveedor.id_proveedor;
+
+    setProveedorId(id);
+    setFormulario({
+      nombre: proveedor.NOMBRE ?? proveedor.nombre ?? "",
+      direccion: proveedor.DIRECCION ?? proveedor.direccion ?? "",
+      telefono: proveedor.TELEFONO ?? proveedor.telefono ?? "",
+      nit: proveedor.NIT ?? proveedor.nit ?? "",
     });
     setError("");
     setAbierto(true);
@@ -84,14 +102,24 @@ export default function Proveedores() {
       setGuardando(true);
       setError("");
 
-      await axios.post(`${api}/crear-proveedor`, {
+      const datos = {
         nombre: formulario.nombre.trim(),
         direccion: formulario.direccion.trim(),
         telefono: formulario.telefono.trim(),
         nit: formulario.nit.trim() || null,
-      });
+      };
+
+      if (proveedorId !== null) {
+        await axios.put(
+          `${api}/proveedores/${proveedorId}`,
+          datos
+        );
+      } else {
+        await axios.post(`${api}/crear-proveedor`, datos);
+      }
 
       setAbierto(false);
+      setProveedorId(null);
       await cargarProveedores();
     } catch (e) {
       console.error("Error al guardar proveedor:", e);
@@ -149,13 +177,14 @@ export default function Proveedores() {
               <TableCell><strong>Dirección</strong></TableCell>
               <TableCell><strong>Teléfono</strong></TableCell>
               <TableCell><strong>NIT</strong></TableCell>
+              <TableCell align="center"><strong>Acciones</strong></TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {cargando ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={6} align="center">
                   <CircularProgress size={28} />
                 </TableCell>
               </TableRow>
@@ -180,11 +209,21 @@ export default function Proveedores() {
                   <TableCell>
                     {proveedor.NIT ?? proveedor.nit ?? "—"}
                   </TableCell>
+                  <TableCell align="center">
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<EditRoundedIcon />}
+                      onClick={() => editarProveedor(proveedor)}
+                    >
+                      Editar
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={6} align="center">
                   No hay proveedores registrados.
                 </TableCell>
               </TableRow>
@@ -200,7 +239,11 @@ export default function Proveedores() {
         maxWidth="sm"
       >
         <Box component="form" onSubmit={guardarProveedor}>
-          <DialogTitle>Registrar proveedor</DialogTitle>
+          <DialogTitle>
+            {proveedorId !== null
+              ? "Editar proveedor"
+              : "Registrar proveedor"}
+          </DialogTitle>
 
           <DialogContent>
             <TextField
@@ -262,7 +305,11 @@ export default function Proveedores() {
               variant="contained"
               disabled={guardando}
             >
-              {guardando ? "Guardando..." : "Guardar proveedor"}
+              {guardando
+                ? "Guardando..."
+                : proveedorId !== null
+                  ? "Actualizar proveedor"
+                  : "Guardar proveedor"}
             </Button>
           </DialogActions>
         </Box>
