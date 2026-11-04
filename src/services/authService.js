@@ -8,7 +8,7 @@ const authApi = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-});
+})
 
 export const loginRequest = async (credenciales) => {
     const response = await authApi.post(
@@ -19,5 +19,5 @@ export const loginRequest = async (credenciales) => {
         }
     );
 
-    return response.data;
-};
+    return response.data
+}
